@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline with DevSecOps
 
 on:
   push:
@@ -8,12 +8,12 @@ on:
 
 permissions:
   contents: read
-  security-events: write   # Needed for CodeQL & security alerts
+  security-events: write
   actions: read
   checks: write
-  packages: write          # Needed for pushing to GHCR
+  packages: write
   id-token: write
-  issues: write            # Allow ZAP to create/update GitHub issues if enabled later
+  issues: write
 
 jobs:
   build-and-test:
@@ -91,7 +91,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 1. SAST (CodeQL)
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
@@ -100,7 +99,6 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
 
-      # 2. Dependency Scan (Snyk or fallback to npm audit)
       - name: Dependency Scan
         run: |
           if [ -n "${{ secrets.SNYK_TOKEN }}" ]; then
@@ -113,7 +111,6 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      # 3. Secrets Scan (Gitleaks)
       - name: Run gitleaks
         uses: zricethezav/gitleaks-action@v2
 
@@ -125,7 +122,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 4. Container Image Scan (Trivy)
       - name: Scan Backend image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
@@ -149,28 +145,46 @@ jobs:
       - name: Start app
         run: docker compose up -d && sleep 30
 
-      - name: Run OWASP ZAP Baseline Scan (frontend)
+      - name: Run OWASP ZAP Baseline Scan
         run: |
           mkdir -p zap_output/.zap
           chmod -R 777 zap_output
-          # Write rules file (tab-separated)
           echo -e "10020\tWARN\tIgnore missing anti-clickjacking header" > zap_output/.zap/rules.tsv
           echo -e "10021\tWARN\tIgnore X-Content-Type-Options missing" >> zap_output/.zap/rules.tsv
           echo -e "10037\tWARN\tIgnore X-Powered-By disclosure" >> zap_output/.zap/rules.tsv
           echo -e "10038\tWARN\tIgnore CSP not set" >> zap_output/.zap/rules.tsv
           echo -e "10063\tWARN\tIgnore Permissions Policy header missing" >> zap_output/.zap/rules.tsv
           echo -e "90004\tWARN\tIgnore Spectre isolation warnings" >> zap_output/.zap/rules.tsv
-
-          # Run ZAP scan
           docker run --rm --network host \
             -v $(pwd)/zap_output:/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py -t http://localhost:3000 \
               -r zap_report.html -m 2 -c /zap/wrk/.zap/rules.tsv
 
-      - name: Upload ZAP Report (frontend)
+      - name: Upload ZAP Report
         uses: actions/upload-artifact@v4
         with:
-          name: zap-report-frontend
+          name: zap-report
           path: zap_output/zap_report.html
 
+  deploy-to-k8s:
+    runs-on: ubuntu-latest
+    needs: docker-build
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: latest
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_CONTENT }}" > $HOME/.kube/config
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -k k8s/
