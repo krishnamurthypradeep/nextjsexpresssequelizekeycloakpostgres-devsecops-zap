@@ -11,8 +11,8 @@ permissions:
   security-events: write   # Needed for CodeQL & security alerts
   actions: read
   checks: write
-  packages: write
-  id-token: write          # Needed if publishing to GHCR or using OIDC auth
+  packages: write          # Needed for pushing to GHCR
+  id-token: write
 
 jobs:
   build-and-test:
@@ -72,20 +72,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Backend Image
-        run: docker build -t ghcr.io/${{ github.repository }}-backend:latest ./backend
+      - name: Build & Push Backend Image
+        run: |
+          docker build -t ghcr.io/${{ github.repository }}-backend:latest ./backend
+          docker push ghcr.io/${{ github.repository }}-backend:latest
 
-      - name: Build Frontend Image
-        run: docker build -t ghcr.io/${{ github.repository }}-frontend:latest ./frontend
-
-      - name: Save Docker images
-        run: docker save $(docker images --format '{{.Repository}}:{{.Tag}}' | grep ghcr.io/${{ github.repository }}) -o docker-images.tar
-
-      - name: Upload Docker images as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-images
-          path: docker-images.tar
+      - name: Build & Push Frontend Image
+        run: |
+          docker build -t ghcr.io/${{ github.repository }}-frontend:latest ./frontend
+          docker push ghcr.io/${{ github.repository }}-frontend:latest
 
   security-scans:
     runs-on: ubuntu-latest
