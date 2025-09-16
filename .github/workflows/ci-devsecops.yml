@@ -13,6 +13,8 @@ permissions:
   checks: write
   packages: write          # Needed for pushing to GHCR
   id-token: write
+  
+  issues: write 
 
 jobs:
   build-and-test:
