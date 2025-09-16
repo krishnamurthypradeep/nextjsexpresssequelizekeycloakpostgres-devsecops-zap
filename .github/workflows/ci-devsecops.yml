@@ -153,13 +153,13 @@ jobs:
         run: |
           mkdir -p zap_output/.zap
           chmod -R 777 zap_output
-          # Write rules file
-          echo "10020   WARN   Ignore missing anti-clickjacking header" > zap_output/.zap/rules.tsv
-          echo "10021   WARN   Ignore X-Content-Type-Options missing" >> zap_output/.zap/rules.tsv
-          echo "10037   WARN   Ignore X-Powered-By disclosure" >> zap_output/.zap/rules.tsv
-          echo "10038   WARN   Ignore CSP not set" >> zap_output/.zap/rules.tsv
-          echo "10063   WARN   Ignore Permissions Policy header missing" >> zap_output/.zap/rules.tsv
-          echo "90004   WARN   Ignore Spectre isolation warnings" >> zap_output/.zap/rules.tsv
+          # Write rules file (tab-separated)
+          echo -e "10020\tWARN\tIgnore missing anti-clickjacking header" > zap_output/.zap/rules.tsv
+          echo -e "10021\tWARN\tIgnore X-Content-Type-Options missing" >> zap_output/.zap/rules.tsv
+          echo -e "10037\tWARN\tIgnore X-Powered-By disclosure" >> zap_output/.zap/rules.tsv
+          echo -e "10038\tWARN\tIgnore CSP not set" >> zap_output/.zap/rules.tsv
+          echo -e "10063\tWARN\tIgnore Permissions Policy header missing" >> zap_output/.zap/rules.tsv
+          echo -e "90004\tWARN\tIgnore Spectre isolation warnings" >> zap_output/.zap/rules.tsv
 
           # Run ZAP scan
           docker run --rm --network host \
@@ -174,8 +174,3 @@ jobs:
           name: zap-report-frontend
           path: zap_output/zap_report.html
 
-      - name: Upload ZAP Report (frontend)
-        uses: actions/upload-artifact@v4
-        with:
-          name: zap-report-frontend
-          path: zap_output/zap_report.html
