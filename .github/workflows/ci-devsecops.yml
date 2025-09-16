@@ -105,7 +105,6 @@ jobs:
         run: |
           if [ -n "${{ secrets.SNYK_TOKEN }}" ]; then
             echo "Running Snyk scan..."
-            # Use npx so we don't need a dedicated action; allow failures to not break CI
             npx snyk test --all-projects || true
           else
             echo "No SNYK_TOKEN found, running npm audit instead..."
@@ -147,7 +146,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Start app (compose)
+      - name: Start app
         run: docker compose up -d && sleep 30
 
       - name: Run OWASP ZAP Baseline Scan (frontend)
@@ -163,7 +162,6 @@ jobs:
 10063   WARN   Ignore Permissions Policy header missing
 90004   WARN   Ignore Spectre isolation warnings
 EOF
-          # Run ZAP in container; rules file path inside container = /zap/wrk/.zap/rules.tsv
           docker run --rm --network host \
             -v $(pwd)/zap_output:/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
@@ -175,28 +173,3 @@ EOF
         with:
           name: zap-report-frontend
           path: zap_output/zap_report.html
-
-      # Optional: scan backend API and upload separate report (uncomment if needed)
-      # - name: Run OWASP ZAP Baseline Scan (backend API)
-      #   run: |
-      #     mkdir -p zap_output_api/.zap
-      #     chmod -R 777 zap_output_api
-      #     cat <<'EOF' > zap_output_api/.zap/rules.tsv
-      # 10020   WARN   Ignore missing anti-clickjacking header
-      # 10021   WARN   Ignore X-Content-Type-Options missing
-      # 10037   WARN   Ignore X-Powered-By disclosure
-      # 10038   WARN   Ignore CSP not set
-      # 10063   WARN   Ignore Permissions Policy header missing
-      # 90004   WARN   Ignore Spectre isolation warnings
-      # EOF
-      #     docker run --rm --network host \
-      #       -v $(pwd)/zap_output_api:/zap/wrk/:rw \
-      #       ghcr.io/zaproxy/zaproxy:stable \
-      #       zap-baseline.py -t http://localhost:3001/api \
-      #         -r zap_report_api.html -m 2 -c /zap/wrk/.zap/rules.tsv
-      #
-      # - name: Upload ZAP Report (backend)
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: zap-report-backend
-      #     path: zap_output_api/zap_report_api.html
