@@ -13,8 +13,7 @@ permissions:
   checks: write
   packages: write          # Needed for pushing to GHCR
   id-token: write
-  
-  issues: write 
+  issues: write            # ✅ Allow ZAP to create/update GitHub issues
 
 jobs:
   build-and-test:
@@ -156,3 +155,4 @@ jobs:
           target: 'http://localhost:3000'
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
+          artifact_name: zap-scan-report   # ✅ fix invalid artifact name
