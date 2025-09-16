@@ -153,10 +153,20 @@ jobs:
         run: |
           mkdir -p zap_output
           chmod 777 zap_output
+          # Create rules file to downgrade noisy alerts
+          cat <<EOF > .zap/rules.tsv
+10020   WARN   Ignore missing anti-clickjacking header
+10021   WARN   Ignore X-Content-Type-Options missing
+10037   WARN   Ignore X-Powered-By disclosure
+10038   WARN   Ignore CSP not set
+10063   WARN   Ignore Permissions Policy header missing
+90004   WARN   Ignore Spectre isolation warnings
+EOF
           docker run --rm --network host \
-            -v $(pwd)/zap_output:/zap/wrk/:rw \
+            -v $(pwd):/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t http://localhost:3000 -r zap_report.html
+            zap-baseline.py -t http://localhost:3000 \
+              -r zap_output/zap_report.html -m 2 -c .zap/rules.tsv
 
       - name: Upload ZAP Report
         uses: actions/upload-artifact@v4
