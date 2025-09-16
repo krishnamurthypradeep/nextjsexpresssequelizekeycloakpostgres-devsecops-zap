@@ -1,12 +1,13 @@
 import NextAuth from "next-auth";
-import Keycloak from "next-auth/providers/keycloak";
+import KeycloakProvider from "next-auth/providers/keycloak";
 
 const handler = NextAuth({
   providers: [
-    Keycloak({
-      issuer: process.env.KEYCLOAK_ISSUER,
+    KeycloakProvider({
+      issuer: process.env.KEYCLOAK_ISSUER, // must equal Keycloak token iss (http://localhost:8080/realms/product-portfolio)
+      wellKnown: `${process.env.KEYCLOAK_INTERNAL_URL}/realms/product-portfolio/.well-known/openid-configuration`,
       clientId: process.env.KEYCLOAK_CLIENT_ID,
-      clientSecret: process.env.KEYCLOAK_CLIENT_SECRET, // REQUIRED for Confidential clients
+      clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
       checks: ["pkce", "state"],
       profile(profile) {
         return {
@@ -18,6 +19,7 @@ const handler = NextAuth({
       },
     }),
   ],
+
   session: { strategy: "jwt" },
 
   callbacks: {
@@ -27,16 +29,22 @@ const handler = NextAuth({
         token.id_token = account.id_token;
         token.refresh_token = account.refresh_token;
         token.expires_at = Date.now() + (account.expires_in ?? 0) * 1000;
-        token.roles = profile?.realm_access?.roles ?? [];
+      }
+      if (profile) {
+        token.roles = profile.realm_access?.roles ?? [];
+        token.sub = profile.sub; // ✅ persist user id
       }
       return token;
     },
+
     async session({ session, token }) {
       session.access_token = token.access_token;
       session.id_token = token.id_token;
-      session.user = { ...session.user, roles: token.roles ?? [],
-        sub: token.sub,   
-       };
+      session.user = {
+        ...session.user,
+        sub: token.sub,       // ✅ available in frontend
+        roles: token.roles ?? [],
+      };
       return session;
     },
   },
