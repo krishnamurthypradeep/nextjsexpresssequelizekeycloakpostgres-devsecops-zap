@@ -1,0 +1,8 @@
+# OWASP ZAP Rules TSV file
+# Format: <id>	<action>	<reason>
+# action: IGNORE, WARN, FAIL
+# Example: 10021	IGNORE	Ignore "X-Content-Type-Options header missing"
+
+10021	IGNORE	Ignore missing X-Content-Type-Options header
+10038	WARN	Server Leaks Information via "X-Powered-By" HTTP Response Header
+90033	IGNORE	Ignore Content Security Policy (CSP) not implemented
