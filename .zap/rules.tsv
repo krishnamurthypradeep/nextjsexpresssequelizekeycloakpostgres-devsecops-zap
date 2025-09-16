@@ -7,3 +7,5 @@
 10038   WARN     Server leaks information via "X-Powered-By" header
 90033   IGNORE   Ignore CSP not implemented
 90022   WARN     X-Frame-Options header not set (warn only)
+10037   WARN   Ignore X-Powered-By info leakage
+
