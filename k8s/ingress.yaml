@@ -29,6 +29,7 @@ spec:
                 port:
                   number: 3000
 
+
     - host: keycloak.local
       http:
         paths:
