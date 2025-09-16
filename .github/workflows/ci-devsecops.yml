@@ -13,7 +13,7 @@ permissions:
   checks: write
   packages: write          # Needed for pushing to GHCR
   id-token: write
-  issues: write            # ✅ Allow ZAP to create/update GitHub issues
+  issues: write            # Allow ZAP to create/update GitHub issues if enabled later
 
 jobs:
   build-and-test:
@@ -149,10 +149,15 @@ jobs:
       - name: Start app
         run: docker compose up -d && sleep 30
 
-      - name: OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.10.0
+      - name: Run OWASP ZAP Baseline Scan
+        run: |
+          docker run --network host \
+            -v $(pwd):/zap/wrk/:rw \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t http://localhost:3000 -r zap_report.html
+
+      - name: Upload ZAP Report
+        uses: actions/upload-artifact@v4
         with:
-          target: 'http://localhost:3000'
-          rules_file_name: '.zap/rules.tsv'
-          cmd_options: '-a'
-          artifact_name: zap-scan-report   # ✅ fix invalid artifact name
+          name: zap-report
+          path: zap_report.html
