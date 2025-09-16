@@ -151,10 +151,10 @@ jobs:
 
       - name: Run OWASP ZAP Baseline Scan
         run: |
-          mkdir -p zap_output
-          chmod 777 zap_output
+          mkdir -p zap_output/.zap
+          chmod -R 777 zap_output
           # Create rules file to downgrade noisy alerts
-          cat <<EOF > .zap/rules.tsv
+          cat <<EOF > zap_output/.zap/rules.tsv
 10020   WARN   Ignore missing anti-clickjacking header
 10021   WARN   Ignore X-Content-Type-Options missing
 10037   WARN   Ignore X-Powered-By disclosure
@@ -163,10 +163,10 @@ jobs:
 90004   WARN   Ignore Spectre isolation warnings
 EOF
           docker run --rm --network host \
-            -v $(pwd):/zap/wrk/:rw \
+            -v $(pwd)/zap_output:/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py -t http://localhost:3000 \
-              -r zap_output/zap_report.html -m 2 -c .zap/rules.tsv
+              -r zap_report.html -m 2 -c /zap/wrk/.zap/rules.tsv
 
       - name: Upload ZAP Report
         uses: actions/upload-artifact@v4
