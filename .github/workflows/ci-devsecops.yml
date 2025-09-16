@@ -151,8 +151,10 @@ jobs:
 
       - name: Run OWASP ZAP Baseline Scan
         run: |
-          docker run --network host \
-            -v $(pwd):/zap/wrk/:rw \
+          mkdir -p zap_output
+          chmod 777 zap_output
+          docker run --rm --network host \
+            -v $(pwd)/zap_output:/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py -t http://localhost:3000 -r zap_report.html
 
@@ -160,4 +162,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: zap-report
-          path: zap_report.html
+          path: zap_output/zap_report.html
