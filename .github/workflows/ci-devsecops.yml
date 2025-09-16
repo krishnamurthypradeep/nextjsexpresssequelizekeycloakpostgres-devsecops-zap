@@ -153,20 +153,26 @@ jobs:
         run: |
           mkdir -p zap_output/.zap
           chmod -R 777 zap_output
-          # Create rules file inside zap_output so container sees it at /zap/wrk/.zap/rules.tsv
-          cat <<'EOF' > zap_output/.zap/rules.tsv
-10020   WARN   Ignore missing anti-clickjacking header
-10021   WARN   Ignore X-Content-Type-Options missing
-10037   WARN   Ignore X-Powered-By disclosure
-10038   WARN   Ignore CSP not set
-10063   WARN   Ignore Permissions Policy header missing
-90004   WARN   Ignore Spectre isolation warnings
-EOF
+          # Write rules file
+          echo "10020   WARN   Ignore missing anti-clickjacking header" > zap_output/.zap/rules.tsv
+          echo "10021   WARN   Ignore X-Content-Type-Options missing" >> zap_output/.zap/rules.tsv
+          echo "10037   WARN   Ignore X-Powered-By disclosure" >> zap_output/.zap/rules.tsv
+          echo "10038   WARN   Ignore CSP not set" >> zap_output/.zap/rules.tsv
+          echo "10063   WARN   Ignore Permissions Policy header missing" >> zap_output/.zap/rules.tsv
+          echo "90004   WARN   Ignore Spectre isolation warnings" >> zap_output/.zap/rules.tsv
+
+          # Run ZAP scan
           docker run --rm --network host \
             -v $(pwd)/zap_output:/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py -t http://localhost:3000 \
               -r zap_report.html -m 2 -c /zap/wrk/.zap/rules.tsv
+
+      - name: Upload ZAP Report (frontend)
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report-frontend
+          path: zap_output/zap_report.html
 
       - name: Upload ZAP Report (frontend)
         uses: actions/upload-artifact@v4
